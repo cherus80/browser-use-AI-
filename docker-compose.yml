@@ -1,0 +1,60 @@
+version: '3.9'
+
+services:
+  browser-use:
+    build:
+      context: https://github.com/cherus80/browser-use-AI-
+      dockerfile: Dockerfile
+    container_name: browser-use
+    env_file:
+      - .env  # Ваш файл с OPENAI_API_KEY и прочими переменными
+    restart: unless-stopped
+    networks:
+      - automation
+    volumes:
+      - ./app:/app  # Папка с вашими скриптами для browser-use
+    working_dir: /app
+    command: python /app/test_agent.py
+
+  n8n-n8n-1:
+    image: n8nio/n8n:latest
+    container_name: n8n-n8n-1
+    restart: unless-stopped
+    ports:
+      - "5678:5678"
+    networks:
+      - automation
+    volumes:
+      - n8n_data:/home/node/.n8n
+    env_file:
+      - .env  # Можно и для n8n положить сюда переменные окружения
+
+  n8n-redis-1:
+    image: redis:latest
+    container_name: n8n-redis-1
+    restart: unless-stopped
+    networks:
+      - automation
+
+  nginx-proxy-manager:
+    image: jc21/nginx-proxy-manager:latest
+    container_name: nginx-proxy-manager
+    restart: unless-stopped
+    ports:
+      - "443:443"
+      - "80:80"
+      - "81:81"
+    networks:
+      - automation
+    volumes:
+      - nginx_data:/data
+      - nginx_letsencrypt:/etc/letsencrypt
+
+volumes:
+  n8n_data:
+  nginx_data:
+  nginx_letsencrypt:
+
+networks:
+  automation:
+    driver: bridge
